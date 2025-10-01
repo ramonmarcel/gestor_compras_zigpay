@@ -3,10 +3,11 @@ import { ShoppingListItem, PurchasedItem, ParsedExcelData, Product } from './typ
 import FileUpload from './components/FileUpload';
 import ShoppingListView from './components/ShoppingListView';
 import PurchaseConfirmationView from './components/PurchaseConfirmationView';
+import SettingsView from './components/SettingsView';
 import { parseExcelFile } from './services/excelParser';
 
-// IMPORTANTE: URL atualizado com o link do seu arquivo no GitHub.
-const DEFAULT_EXCEL_URL = 'https://raw.githubusercontent.com/ramonmarcel/prosutos_zigpay_arena/main/exemplo_entrada_produtos.xlsx';
+// IMPORTANTE: URL padrão para o primeiro carregamento.
+const DEFAULT_EXCEL_URL = 'https://raw.githubusercontent.com/ramonmarcel/gestor_compras_zigpay/main/exemplo_entrada_produtos.xlsx';
 
 
 // Helper para lidar com a conversão do Map para JSON
@@ -43,10 +44,11 @@ const App: React.FC = () => {
     const [excelData, setExcelData] = useState<ParsedExcelData | null>(null);
     const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
     const [purchasedItems, setPurchasedItems] = useState<PurchasedItem[]>([]);
-    const [view, setView] = useState<'shopping' | 'purchase'>('shopping');
+    const [view, setView] = useState<'shopping' | 'purchase' | 'settings'>('shopping');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [statusMessage, setStatusMessage] = useState<string>('Carregando dados...');
+    const [dataSourceUrl, setDataSourceUrl] = useState<string>(() => localStorage.getItem('dataSourceUrl') || DEFAULT_EXCEL_URL);
 
     const processAndSetData = (data: ParsedExcelData) => {
         setExcelData(data);
@@ -59,7 +61,7 @@ const App: React.FC = () => {
         setStatusMessage(isSync ? 'Sincronizando dados...' : 'Carregando dados padrão...');
         setError(null);
         try {
-            const response = await fetch(DEFAULT_EXCEL_URL);
+            const response = await fetch(dataSourceUrl);
             if (!response.ok) {
                 throw new Error(`Não foi possível buscar o arquivo: ${response.statusText}`);
             }
@@ -80,7 +82,7 @@ const App: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [dataSourceUrl]);
 
     useEffect(() => {
         const storedExcelData = loadExcelDataFromStorage();
@@ -142,6 +144,14 @@ const App: React.FC = () => {
         setPurchasedItems(prev => prev.filter(item => item.id !== id));
     }, []);
 
+    const handleDataSourceUrlChange = (newUrl: string) => {
+        setDataSourceUrl(newUrl);
+        localStorage.setItem('dataSourceUrl', newUrl);
+        setStatusMessage('URL de dados atualizada com sucesso!');
+        setTimeout(() => setStatusMessage(''), 2000);
+        setView('shopping'); // Volta para a tela principal
+    };
+
 
     const showFileUpload = () => {
         setExcelData(null);
@@ -191,6 +201,12 @@ const App: React.FC = () => {
                         onRemovePurchasedItem={handleRemovePurchasedItem}
                     />;
         }
+        if (view === 'settings') {
+            return <SettingsView 
+                        currentUrl={dataSourceUrl}
+                        onUrlChange={handleDataSourceUrlChange}
+                    />;
+        }
     };
 
     return (
@@ -232,6 +248,9 @@ const App: React.FC = () => {
                         </button>
                         <button onClick={() => setView('purchase')} className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${view === 'purchase' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>
                             Confirmação da Compra
+                        </button>
+                        <button onClick={() => setView('settings')} className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${view === 'settings' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>
+                            Configurações
                         </button>
                     </nav>
                  )}
