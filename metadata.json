@@ -1,0 +1,5 @@
+{
+  "name": "Gestor de Compras Arena Guanabara",
+  "description": "Uma aplicação para criar listas de compras e confirmar compras para a Arena Guanabara. Faça o upload do arquivo de dados para começar.",
+  "requestFramePermissions": []
+}
